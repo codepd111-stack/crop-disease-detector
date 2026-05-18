@@ -1,0 +1,10 @@
+fastapi
+uvicorn
+python-multipart
+pillow
+torch
+torchvision
+langchain
+langchain-groq
+langchain-core
+python-dotenv
