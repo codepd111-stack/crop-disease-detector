@@ -1,0 +1,10 @@
+venv/
+__pycache__/
+*.pth
+*.zip
+data/
+.env
+node_modules/
+frontend/dist/
+*.pyc
+.DS_Store
