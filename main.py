@@ -7,7 +7,7 @@ import os
 
 load_dotenv()
 
-app = FastAPI(title="Crop Disease Detector API")
+app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
@@ -21,21 +21,17 @@ llm = ChatGroq(
     model_name="llama-3.3-70b-versatile"
 )
 
-def get_treatment(disease_name: str) -> str:
-    clean_name = disease_name.replace("___", " — ").replace("_", " ")
-    prompt = f"""You are an agricultural expert. A farmer's crop has been diagnosed with: {clean_name}.
-Give exactly 3 sentences:
-1. What this disease is
-2. The most effective treatment
-3. A prevention tip for the future
-Be specific, practical, and use simple language a farmer would understand."""
-    response = llm.invoke([HumanMessage(content=prompt)])
-    return response.content
+def get_treatment(disease):
+    name = disease.replace("___", " - ").replace("_", " ")
+    prompt = f"""A farmer's crop has been diagnosed with {name}.
+Give exactly 3 sentences - what the disease is, how to treat it, and one prevention tip.
+Keep it simple and practical, like you're talking to a farmer."""
+    return llm.invoke([HumanMessage(content=prompt)]).content
 
 @app.post("/predict")
 async def predict_disease(file: UploadFile = File(...)):
     if not file.content_type.startswith("image/"):
-        raise HTTPException(status_code=400, detail="File must be an image")
+        raise HTTPException(status_code=400, detail="please upload an image file")
 
     image_bytes = await file.read()
 
@@ -43,12 +39,12 @@ async def predict_disease(file: UploadFile = File(...)):
         from model.predict import predict
         result = predict(image_bytes)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Prediction failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 
     treatment = get_treatment(result["predicted_class"])
 
     return {
-        "disease": result["predicted_class"].replace("___", " — ").replace("_", " "),
+        "disease": result["predicted_class"].replace("___", " - ").replace("_", " "),
         "confidence": result["confidence"],
         "top3": result["top3"],
         "treatment": treatment
